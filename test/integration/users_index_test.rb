@@ -29,4 +29,29 @@ class UsersIndexTest < ActionDispatch::IntegrationTest
     get users_path
     assert_select 'a', text: 'delete', count: 0
   end
+  
+  test "index only contains activated users" do
+    log_in_as(@admin)
+    get users_path
+    assert_select 'div.pagination'
+    first_page_of_users = User.paginate(page: 1)
+    first_page_of_users.each do |user|
+      assert_equal user.activated, true
+    end
+  end
+
+  test "no show unactivated user page" do
+    get signup_path
+    post users_path, params: { user: { name:  "Example User",
+                                         email: "user@example.com",
+                                         password:              "password",
+                                         password_confirmation: "password" } }
+    user = assigns(:user)
+    log_in_as(@non_admin)
+    assert_not user.activated?
+    get user_path(user)
+    assert_redirected_to root_url
+  
+  end
+
 end
